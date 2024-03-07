@@ -33,7 +33,8 @@ CSRF_COOKIE_SAMESITE = None
 
 ALLOWED_HOSTS = [
    
-    
+    '*'
+    '52.195.228.101'
     'localhost',
     '127.0.0.1',
 

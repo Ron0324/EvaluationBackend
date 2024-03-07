@@ -64,7 +64,7 @@ def faculty_login(request):
             # Serialize faculty information and include it in the response
             serializer = FacultySerializer(faculty)
             faculty_data = serializer.data
-            redirect_url = "http://localhost:3000/homepage"
+            redirect_url = "http://prms-castillejos-evaluation.s3-website-ap-northeast-1.amazonaws.com/homepage"
 
             return JsonResponse({'message': 'Login successful', 'faculty': faculty_data})
 
