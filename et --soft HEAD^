@@ -1,0 +1,54 @@
+[33mcommit 4b64baeb9e557d9e4d42266b07a4fea518ca51c9[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: Ubuntu <ubuntu@ip-172-31-41-108.ap-northeast-1.compute.internal>
+Date:   Sat Mar 9 16:18:28 2024 +0000
+
+    update form webserver
+
+[33mcommit fb6b07bb921d71b2f7e4957af1ed4a66f4a331e1[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Sun Mar 10 00:50:08 2024 +0800
+
+    commit
+
+[33mcommit 35b407fc586a4e10d58c5fe3f1a3d81a5827f827[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Sat Mar 9 12:24:09 2024 +0800
+
+    url update
+
+[33mcommit 458297c7ad14427b01e6e8e0af9c6b6ebe8ec4df[m
+Merge: ec8fcac 1f247c5
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Sat Mar 9 11:53:22 2024 +0800
+
+    whatMerge branch 'master' of https://github.com/Ron0324/EvaluationBackend
+
+[33mcommit ec8fcacaaee8d58d3a216210f5fdeb52db6eccd4[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Sat Mar 9 11:49:39 2024 +0800
+
+    updated url
+
+[33mcommit 1f247c5754823fba9f806592f1608b61608ffa53[m
+Author: Ronaldo Santos <134698516+Ron0324@users.noreply.github.com>
+Date:   Fri Mar 8 09:36:14 2024 +0800
+
+    Update settings.py
+
+[33mcommit dd75dd3ff04a633a168bae29ade96a6842e5b48f[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Fri Mar 8 09:05:14 2024 +0800
+
+    update
+
+[33mcommit f76165af8158a4bf02bddb0f6e9f07a174c63e08[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Fri Mar 8 06:56:19 2024 +0800
+
+    update
+
+[33mcommit dcc08d102fba9177e30e8c67d796c1f621ff6bd9[m
+Author: Ron0324 <naldosan1013@gmail.com>
+Date:   Fri Mar 8 03:48:08 2024 +0800
+
+    second Commit
