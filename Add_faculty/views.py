@@ -70,7 +70,7 @@ def faculty_login(request):
         'selected_image': request.build_absolute_uri(faculty.selected_image.url) if faculty.selected_image else None,
         'subjects': [subject.Subname for subject in faculty.subjects.all()],
     }
-            redirect_url = "http://localhost:3000/homepage"
+            redirect_url = "http://35.79.71.69:3000/homepage"
 
             response_data = {
                 'message_1': 'Login successful',
