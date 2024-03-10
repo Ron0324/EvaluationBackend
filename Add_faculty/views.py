@@ -35,7 +35,6 @@ from django.db import IntegrityError
 from django.contrib.auth.hashers import check_password
 from .models import Faculty
 from .serializers import FacultySerializer  # Assuming you have a serializer for the Faculty model
-
 @csrf_exempt
 def faculty_login(request):
     if request.method == 'POST' or request.method == 'GET':
@@ -62,11 +61,24 @@ def faculty_login(request):
             print(f"Login successful for ID: {id_number}")
 
             # Serialize faculty information and include it in the response
-            serializer = FacultySerializer(faculty)
-            faculty_data = serializer.data
-            redirect_url = "http://35.79.71.69:3000/homepage"
+            faculty_data = {
+        'id_number': faculty.id_number,
+        'first_name': faculty.first_name,
+        'last_name': faculty.last_name,
+        'status': faculty.status,
+        'password': faculty.password,
+        'selected_image': request.build_absolute_uri(faculty.selected_image.url) if faculty.selected_image else None,
+        'subjects': [subject.Subname for subject in faculty.subjects.all()],
+    }
+            redirect_url = "http://localhost:3000/homepage"
 
-            return JsonResponse({'message': 'Login successful', 'faculty': faculty_data})
+            response_data = {
+                'message_1': 'Login successful',
+                'faculty': faculty_data,
+                'redirect_url': redirect_url,
+            }
+
+            return JsonResponse(response_data)  # Add this line to return the response
 
         except IntegrityError as e:
             print(f"Error during login: {e}")
@@ -75,7 +87,6 @@ def faculty_login(request):
     else:
         print("Error: Only POST and GET requests are allowed")
         return JsonResponse({'error': 'Only POST and GET requests are allowed'}, status=405)
-
     
 
 

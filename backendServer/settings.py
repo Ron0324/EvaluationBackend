@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'Course_and_Students',
     'Criteria',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
    
 ]
@@ -65,6 +66,11 @@ SESSION_COOKIE_AGE = 1209600
 
 AUTH_USER_MODEL = 'Add_faculty.Faculty'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
@@ -100,6 +106,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'http://127.0.0.1:8000',
    "http://35.79.71.69:3000",
+    "http://localhost:3000",
     
 ]
 
