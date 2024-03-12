@@ -149,11 +149,11 @@ WSGI_APPLICATION = 'backendServer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-      'NAME': 'evaluationdatabase',
-        'USER': 'admin',
+      'NAME': 'prmsudata',
+        'USER': 'root',
         'PASSWORD': 'cd022826464',
-        'HOST': 'evaluationdatabase.cxwymuisszki.ap-northeast-1.rds.amazonaws.com',
-        'PORT': '3306',
+        'HOST': 'prmsudata.cluster-cje20kqiwdnp.ap-southeast-2.rds.amazonaws.com',
+        'PORT': '8000',
     }
 }
 
