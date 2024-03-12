@@ -148,14 +148,14 @@ WSGI_APPLICATION = 'backendServer.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
+DATABASES ={
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-      'NAME': 'prmsudata',
-        'USER': 'Admin',
-        'PASSWORD': 'cd022826464',
-        'HOST': 'facultydata.cdgwemy4c6f9.us-east-1.rds.amazonaws.com',
-        'PORT': '3306',
+        'NAME': 'beuci2h57o3dofgtjmlp',
+        'USER': 'uuo4kkznxsarh9x4',
+        'PASSWORD': 'g0neSiS1q6Rbn5ybGSg',
+        'HOST': 'beuci2h57o3dofgtjmlp-mysql.services.clever-cloud.com',
+        'PORT': '20310',  # Default MySQL port is 3306
     }
 }
 
