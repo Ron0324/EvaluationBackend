@@ -35,6 +35,7 @@ ALLOWED_HOSTS = [
    
     '*',
     '52.199.99.23',
+    '52.63.82.248',
     
     'localhost',
     '127.0.0.1',
@@ -106,6 +107,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'http://127.0.0.1:8000',
    "http://35.79.71.69:3000",
+    "http://52.63.82.248",
     "http://localhost:3000",
     
 ]
@@ -149,11 +151,11 @@ WSGI_APPLICATION = 'backendServer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-      'NAME': 'evaluationdatabase',
-        'USER': 'admin',
+      'NAME': 'prmsudata',
+        'USER': 'root',
         'PASSWORD': 'cd022826464',
-        'HOST': 'evaluationdatabase.cxwymuisszki.ap-northeast-1.rds.amazonaws.com',
-        'PORT': '3306',
+        'HOST': 'prmsudata.cluster-cje20kqiwdnp.ap-southeast-2.rds.amazonaws.com',
+        'PORT': '8000',
     }
 }
 
