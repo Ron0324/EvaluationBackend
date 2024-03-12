@@ -100,7 +100,7 @@ def student_login(request):
             login(request, student)
 
     # Include the redirect URL in the response
-            redirect_url = "http://52.63.82.248:3000/homepage"
+            redirect_url = "http://54.66.178.2:3000/homepage"
             print('Login successful. Redirecting to:', redirect_url)
 
             return JsonResponse({'message': 'Login successful', 'redirect_url': redirect_url})
