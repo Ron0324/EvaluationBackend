@@ -39,6 +39,7 @@ ALLOWED_HOSTS = [
     '3.239.99.118',
     'localhost',
     '127.0.0.1',
+    '13.238.217.68',
 
 ]
 LOGIN_URL = 'http://localhost:3000/LogIn'
@@ -106,9 +107,8 @@ CORS_ALLOW_METHODS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     'http://127.0.0.1:8000',
-    'http://52.63.82.248',
-    'http://13.239.99.118:8000',
-    
+    'http://54.66.178.2:3000/',
+  
 ]
 
 CORS_ALLOW_HEADERS = [
