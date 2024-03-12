@@ -152,10 +152,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
       'NAME': 'prmsudata',
-        'USER': 'root',
+        'USER': 'Admin',
         'PASSWORD': 'cd022826464',
-        'HOST': 'prmsudata.cluster-cje20kqiwdnp.ap-southeast-2.rds.amazonaws.com',
-        'PORT': '8000',
+        'HOST': 'facultydata.cdgwemy4c6f9.us-east-1.rds.amazonaws.com',
+        'PORT': '3306',
     }
 }
 
