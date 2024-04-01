@@ -12,3 +12,10 @@ class Criteria (models.Model):
     class Meta:
         db_table = 'Criteria'
 
+class EvaluationDate (models.Model):
+    semester = models.CharField(max_length = 15)
+    date_started = models.DateField()
+    date_ended = models.DateField()
+    
+    class Meta:
+        db_table = 'EvaluationDate'

@@ -47,3 +47,17 @@ class Faculty(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+
+
+class Evaluation(models.Model):
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    criteria_A = models.DecimalField(max_digits=5, decimal_places=2)
+    criteria_B = models.DecimalField(max_digits=5, decimal_places=2)
+    criteria_C = models.DecimalField(max_digits=5, decimal_places=2)
+    criteria_D = models.DecimalField(max_digits=5, decimal_places=2)
+    total_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    feedback = models.TextField()
+
+    class Meta:
+        db_table = 'Evaluation'

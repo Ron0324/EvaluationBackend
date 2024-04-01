@@ -34,8 +34,7 @@ CSRF_COOKIE_SAMESITE = None
 ALLOWED_HOSTS = [
    
     '*',
-    '52.199.99.23',
-    '52.63.82.248',
+   '91.108.111.180',
     '3.239.99.118',
     'localhost',
     '127.0.0.1',
@@ -107,9 +106,8 @@ CORS_ALLOW_METHODS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    'http://127.0.0.1:8000',
-    'http://54.66.178.2:3000',
     'http://3.27.126.117:3000',
+    'http://91.108.111.180:3000',
   
 ]
 

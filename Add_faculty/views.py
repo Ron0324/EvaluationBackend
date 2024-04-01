@@ -2,7 +2,7 @@
 from django.db import models
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from .models import Faculty
+from .models import Faculty, Evaluation
 from Departments.models import Subject as DepartmentSubject
 import json
 from django.contrib.auth.hashers import make_password
@@ -14,6 +14,11 @@ from django.core import serializers
 from .serializers import FacultySerializer
 from django.views.decorators.csrf import csrf_protect
 import os
+from django.views.decorators.http import require_POST
+from textblob import TextBlob
+from django.shortcuts import render
+import re 
+
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import check_password
@@ -70,7 +75,7 @@ def faculty_login(request):
         'selected_image': request.build_absolute_uri(faculty.selected_image.url) if faculty.selected_image else None,
         'subjects': [subject.Subname for subject in faculty.subjects.all()],
     }
-            redirect_url = "http://3.27.126.117:3000/homepage"
+            redirect_url = "http://91.108.111.180:3000/homepage"
 
             response_data = {
                 'message_1': 'Login successful',
@@ -213,3 +218,162 @@ def faculty_info(request, faculty_id):
 
 
     return JsonResponse(faculty_info)
+
+
+@csrf_exempt
+@require_POST
+def save_evaluation(request, faculty_id):
+    if request.method == 'POST':
+        try:
+            evaluations_data = json.loads(request.body.decode('utf-8'))['evaluations_data']
+            faculty = Faculty.objects.get(pk=faculty_id)
+
+            for evaluation_data in evaluations_data:
+                evaluation = Evaluation.objects.create(
+                    criteria_A=evaluation_data['criteria_A'],
+                    criteria_B=evaluation_data['criteria_B'],
+                    criteria_C=evaluation_data['criteria_C'],
+                    criteria_D=evaluation_data['criteria_D'],
+                    total_rate=evaluation_data['total_rate'],
+                    feedback=evaluation_data['feedback'],
+                    faculty=faculty
+                )
+
+            return JsonResponse({'message': 'Evaluation successful.'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid request method.'}, status=400)   
+
+
+def evaluation_score_per_faculty(request, faculty_id):
+    faculty = get_object_or_404(Faculty, id=faculty_id)
+
+    # Fetching specific fields from Evaluation objects
+    scores = Evaluation.objects.filter(faculty=faculty).values('criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback')
+
+    return JsonResponse(list(scores), safe=False)
+
+
+
+import json
+
+import re
+from textblob import TextBlob
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .models import Evaluation, Faculty
+
+def analyze_feedback(request, faculty_id):
+    # Define the set of offensive words and phrases
+    offensive_phrases = {"putang ina", "putangina", "putang ina"}  
+    offensive_words = {"crap", "idiot", "stupid", "fool", "fuck", "fuck you", "go to hell", "goes to hell",
+                       "fuck her", "fuck him", "shit", "bitch", "cunt",
+                       "son of a bitch", "dickhead", "tanga", "mulala",
+                       "gago", "inutil", "mang mang", "mangmang", "inotil",
+                       "bobo"} 
+
+    
+    negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late", "always late", 'not teaching',
+                        'dosent teach anything', 'dose not teach'} 
+
+    faculty = get_object_or_404(Faculty, id=faculty_id)
+
+    feedback_data = {
+        'id': faculty.id_number,
+        'name': f'{faculty.first_name} {faculty.last_name}',
+        'sentiment': '',
+        'average_polarity': 0,
+        'average_subjectivity': '',
+        'conclusion': '',  
+        'all_offensive_words': [],  # Changed to list
+        'all_negative_phrases': set()  # Changed to set
+    }
+
+    # Retrieve evaluations associated with the faculty
+    evaluations = Evaluation.objects.filter(faculty=faculty)
+
+    # Initialize variables to store overall sentiment scores
+    total_polarity = 0
+    total_subjectivity = 0
+    num_evaluations = 0
+
+    # Analyze feedback for each evaluation
+    for evaluation in evaluations:
+        # Preprocess feedback text to remove special characters and ensure case insensitivity
+        cleaned_feedback = re.sub(r'[^\w\s]', '', evaluation.feedback.lower())
+
+        # Perform sentiment analysis
+        blob = TextBlob(cleaned_feedback)
+        polarity = blob.sentiment.polarity
+        subjectivity = blob.sentiment.subjectivity
+
+        # Check for offensive words and phrases
+        detected_offensive_words = set()  # Use a set to store offensive words
+        for word in offensive_words:
+            if word in cleaned_feedback:
+                detected_offensive_words.add(word)
+
+        for phrase in offensive_phrases:
+            if phrase in cleaned_feedback:
+                detected_offensive_words.add(phrase)
+
+        # Extend the list of all offensive words with the detected words in this feedback
+        feedback_data['all_offensive_words'].extend(list(detected_offensive_words))
+
+        # Check for negative phrases
+        detected_negative_phrases = set()  # Use a set to store negative phrases
+        for phrase in negative_phrases:
+            if phrase in cleaned_feedback:
+                detected_negative_phrases.add(phrase)
+
+        # Extend the set of all detected negative phrases in this feedback
+        feedback_data['all_negative_phrases'].update(detected_negative_phrases)  # Use update instead of extend
+
+        # Adjust polarity based on the presence of negative phrases
+        if detected_negative_phrases:
+            polarity -= 0.5 
+            subjectivity += 0.5
+
+        # Accumulate sentiment scores
+        total_polarity += polarity
+        total_subjectivity += subjectivity
+        num_evaluations += 1
+
+    # Calculate average sentiment scores and determine overall sentiment label
+    if num_evaluations > 0:
+        average_polarity = total_polarity / num_evaluations
+        average_subjectivity = total_subjectivity / num_evaluations
+
+        # Determine sentiment label based on average polarity score
+        if average_polarity > 0.1:
+            sentiment_label = 'Positive'
+            conclusion = "The faculty member is doing an excellent job. Students appreciate their teaching style and find the lectures engaging."
+        elif average_polarity < -0.1:
+            sentiment_label = 'Negative'
+            conclusion = "The faculty member needs to improve their teaching approach. Students have expressed dissatisfaction with the course materials and delivery. The faculty member should prioritize improving their teaching approach to address student dissatisfaction with the course materials and delivery. This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience"
+        else:
+            sentiment_label = 'Neutral'
+            conclusion = "The feedback for this faculty member is mixed. Some students have positive comments, while others have suggestions for improvement."
+
+        # Map the average subjectivity score to subjective or objective
+        if average_subjectivity > 0.5:
+            subjectivity_label = 'Subjective'
+        else:
+            subjectivity_label = 'Objective'
+
+        feedback_data['sentiment'] = sentiment_label
+        feedback_data['average_polarity'] = average_polarity
+        feedback_data['average_subjectivity'] = subjectivity_label
+        feedback_data['conclusion'] = conclusion  # Changed variable name to 'conclusion'
+
+    else:
+        feedback_data['sentiment'] = 'No evaluations found'
+
+    # If sentiment is negative, include only negative phrases
+    if feedback_data['sentiment'] == 'Negative':
+        feedback_data['all_negative_phrases'] = list(feedback_data['all_negative_phrases'])
+    else:
+        feedback_data.pop('all_negative_phrases')  # Remove 'all_negative_phrases' from feedback_data if sentiment is not negative
+
+    return JsonResponse({'faculty_feedback': feedback_data})
