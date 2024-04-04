@@ -150,11 +150,11 @@ WSGI_APPLICATION = 'backendServer.wsgi.application'
 DATABASES ={
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'beuci2h57o3dofgtjmlp',
-        'USER': 'uuo4kkznxsarh9x4',
-        'PASSWORD': 'g0neSiS1q6Rbn5ybGSg',
-        'HOST': 'beuci2h57o3dofgtjmlp-mysql.services.clever-cloud.com',
-        'PORT': '20310',  # Default MySQL port is 3306
+        'NAME': 'evaluation',
+        'USER': 'evaluation',
+        'PASSWORD': 'Cd_22826464',
+        'HOST': '91.108.111.180',
+        'PORT': '3306',  # Default MySQL port is 3306
     }
 }
 
