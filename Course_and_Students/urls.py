@@ -1,7 +1,7 @@
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import save_course,show_courses,create_student,show_Students,student_login
+from .views import save_course,show_courses,create_student,show_Students,student_login,create_admin
 
 urlpatterns = [
   
@@ -10,6 +10,7 @@ urlpatterns = [
      path('create_students/', create_student,name='create_students'),
      path('show_Students/', show_Students,name='show_Students'),
      path('student_login/', student_login,name='student_login'),
+     path('create_admin/', create_admin,name='create_admin'),
      
 ]  
 

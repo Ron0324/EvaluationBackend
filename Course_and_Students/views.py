@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.db import IntegrityError
-from .models import Course, Student
+from .models import Course, Student,Admin
 from .serializers import CourseSerializer,StudentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -34,6 +34,29 @@ def create_student(request):
         return JsonResponse({'message': 'Student created successfully'})
     else:
         return JsonResponse({'message': 'Invalid request method'}, status=400)
+    
+
+
+@csrf_exempt
+def create_admin(request):
+    if request.method == 'POST':
+        data = json.loads(request.body.decode('utf-8'))
+
+        # Hash the password before saving
+        hashed_password = make_password(data['password'])
+
+        admin = Admin.objects.create(
+            id_number=data['id_number'],
+            full_name=data ['full_name'],
+            password=hashed_password,
+            
+        )
+
+        return JsonResponse({'message': 'Student created successfully'})
+    else:
+        return JsonResponse({'message': 'Invalid request method'}, status=400)
+
+
     
 
 
