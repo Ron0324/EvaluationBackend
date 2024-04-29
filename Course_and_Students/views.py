@@ -9,7 +9,8 @@ from .serializers import CourseSerializer,StudentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password,check_password
-from django.contrib.auth import login
+from django.contrib.auth import login ,authenticate
+
 
 
 
@@ -55,6 +56,61 @@ def create_admin(request):
         return JsonResponse({'message': 'Student created successfully'})
     else:
         return JsonResponse({'message': 'Invalid request method'}, status=400)
+    
+
+
+
+
+@csrf_exempt
+def admin_login(request):
+    if request.method == 'POST':
+        try:
+            id_number = request.POST.get('id_number')
+            password = request.POST.get('password')
+
+            print(f"Login request for ID: {id_number}")
+
+            # Check if the user with the given id_number exists
+            admin = Admin.objects.filter(id_number=id_number).first()
+            if admin is None:
+                print(f"Invalid ID number: {id_number}")
+                return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+            # Check the hashed password
+            if not check_password(password, admin.password):
+                print(f"Invalid password for ID: {id_number}")
+                return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+            # At this point, authentication is successful
+            # Log in the authenticated admin
+            login(request, admin)
+            print(f"Login successful for ID: {id_number}")
+
+            # Serialize admin information
+            admin_data = {
+                'id_number': admin.id_number,
+                'first_name': admin.first_name,
+                # Add more fields as needed
+            }
+
+            # Redirect URL after successful login
+            redirect_url = "http://91.108.111.180:3000/Admin-Dashboard"
+
+            response_data = {
+                'message': 'Login successful',
+                'admin': admin_data,
+                'redirect_url': redirect_url,
+            }
+
+            return JsonResponse(response_data)
+
+        except IntegrityError as e:
+            print(f"Error during login: {e}")
+            return JsonResponse({'error': 'Database error'}, status=500)
+
+    else:
+        print("Error: Only POST requests are allowed")
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
 
     
@@ -94,6 +150,62 @@ def show_courses(request):
 def show_Students(request):
     student = Student.objects.all().values()
     return JsonResponse(list(student), safe=False)
+@csrf_exempt
+def show_admins(request):
+    admin = Admin.objects.all().values()
+    return JsonResponse(list(admin), safe=False)
+
+@csrf_exempt
+def admin_update(request):
+    if request.method == 'POST':
+        try:
+            # Deserialize the JSON data sent in the request body
+            data = json.loads(request.body)
+            
+            # Extract the admin id from the data
+            admin_id = data.get('id')  # Assuming 'id' is the primary key field
+            
+            # Retrieve the admin object from the database
+            admin = Admin.objects.get(pk=admin_id)
+            
+            # Update the admin object with the new information
+            admin.id_number = data.get('id_number', admin.id_number)
+            admin.full_name = data.get('full_name', admin.full_name)
+            
+            # Hash the new password before saving
+            new_password = data.get('password')
+            if new_password:
+                admin.password = make_password(new_password)
+            
+            # Save the updated admin object
+            admin.save()
+            
+            return JsonResponse({'message': 'Admin information updated successfully'})
+        except Admin.DoesNotExist:
+            return JsonResponse({'error': 'Admin not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    
+
+@csrf_exempt
+def admin_delete(request, admin_id):
+    if request.method == 'DELETE':
+        try:
+            # Retrieve the admin object from the database
+            admin = Admin.objects.get(pk=admin_id)
+            
+            # Delete the admin object
+            admin.delete()
+            
+            return JsonResponse({'message': 'Admin deleted successfully'})
+        except Admin.DoesNotExist:
+            return JsonResponse({'error': 'Admin not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Only DELETE requests are allowed'}, status=405)
    
 
 @csrf_exempt
