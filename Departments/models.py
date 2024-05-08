@@ -13,6 +13,8 @@ class Departments(models.Model):
         db_table = 'Departments'
 
 
+ 
+
 class Subject(models.Model):
     Subname = models.CharField(max_length=20,null=False, blank=False)
     SubDescriptions  =  models.CharField(max_length=100,null=False, blank=False)
@@ -21,5 +23,16 @@ class Subject(models.Model):
     def __str__(self):
         return self.Subname
 
+
+class Semester(models.Model):
+    SEMESTER_CHOICES = (
+        ('1', 'First'),
+        ('2', 'Second'),
+    )
+    semester = models.CharField(max_length=1, choices=SEMESTER_CHOICES)
+
+    def __str__(self):
+        return self.get_semester_display()
+    
 
 

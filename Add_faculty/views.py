@@ -2,8 +2,10 @@
 from django.db import models
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from .models import Faculty, Evaluation
+from .models import Faculty, Evaluation, FacultySubject
 from Departments.models import Subject as DepartmentSubject
+from Departments.models import Subject
+from Departments.models import Semester
 import json
 from django.contrib.auth.hashers import make_password
 from django.db import IntegrityError
@@ -75,7 +77,7 @@ def faculty_login(request):
         'selected_image': request.build_absolute_uri(faculty.selected_image.url) if faculty.selected_image else None,
         'subjects': [subject.Subname for subject in faculty.subjects.all()],
     }
-            redirect_url = "http://91.108.111.180:3000/homepage"
+            redirect_url = "http://91.108.111.180:3000/Instructors-Homepage"
 
             response_data = {
                 'message_1': 'Login successful',
@@ -96,6 +98,129 @@ def faculty_login(request):
 
 
 @csrf_exempt
+def save_faculty_subjects(request, faculty_id):
+    if request.method == 'POST':
+        # Extract form data from the request
+        year = request.POST.get('year')
+        semester = request.POST.get('semester')
+        subject_ids = request.POST.getlist('subjects')
+
+        # Get the faculty member based on the provided ID
+        try:
+            faculty = Faculty.objects.get(id=faculty_id)
+        except Faculty.DoesNotExist:
+            return JsonResponse({'error': 'Faculty not found'}, status=404)
+
+        # Save subjects for the faculty member
+        for subject_id in subject_ids:
+            FacultySubject.objects.create(
+                faculty=faculty,
+                subject_id=subject_id,
+                year=year,
+                semester=semester
+            )
+
+        return JsonResponse({'message': 'Subjects saved successfully'}, status=201)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+def faculty_subjects(request, faculty_id, year, semester):
+    if request.method == 'GET':
+        try:
+            # Get the faculty object or raise a 404 error if not found
+            faculty = get_object_or_404(Faculty, id=faculty_id)
+            
+            # Convert semester input to integer
+            semester = int(semester)
+            
+            # Ensure semester input is within valid range (1 or 2)
+            if semester not in [1, 2]:
+                return JsonResponse({'error': 'Invalid semester value'}, status=400)
+            
+            # Retrieve the subjects associated with the faculty for the given year and semester
+            faculty_subjects = FacultySubject.objects.filter(faculty=faculty, year=year, semester=semester)
+            
+            # Extract the subjects from the faculty_subjects queryset
+            subjects = [faculty_subject.subject.Subname for faculty_subject in faculty_subjects]
+            
+            # Return a JSON response with the list of subjects
+            return JsonResponse({'subjects': subjects})
+        except Faculty.DoesNotExist:
+            return JsonResponse({'error': 'Faculty not found'}, status=404)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+
+def fetch_subjects(request, faculty_id, year, semester):
+    if request.method == 'GET':
+        try:
+            # Get the faculty object or return a 404 error if not found
+            faculty = get_object_or_404(Faculty, id=faculty_id)
+            
+            # Convert semester input to integer
+            semester = int(semester)
+            
+            # Ensure semester input is within valid range (1 or 2)
+            if semester not in [1, 2]:
+                return JsonResponse({'error': 'Invalid semester value'}, status=400)
+
+            # Retrieve the subjects associated with the faculty for the given year and semester
+            faculty_subjects = FacultySubject.objects.filter(
+                faculty=faculty,
+                year=year,
+                semester=semester
+            )
+
+            # Extract the subjects from the faculty_subjects queryset
+            subjects = [faculty_subject.subject.Subname for faculty_subject in faculty_subjects]
+
+            # Return a JSON response with the list of subjects
+            return JsonResponse({'subjects': subjects})
+        except Faculty.DoesNotExist:
+            return JsonResponse({'error': 'Faculty not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    
+    
+def get_years(request, faculty_id):
+    try:
+        # Get the distinct year values associated with the selected faculty member
+        years = FacultySubject.objects.filter(faculty_id=faculty_id).values_list('year', flat=True).distinct()
+
+        # Convert the queryset to a list of integers
+        years = list(years)
+
+        # Return the list of distinct years as JSON response
+        return JsonResponse({'years': years})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def add_subjects_to_faculty(request):
+    data = json.loads(request.body)
+    faculty_id = data.get('id')  # Using 'id' directly
+    semester = data.get('semester')
+    year = data.get('year')
+    subjects = data.get('subjects')
+
+    # Retrieve the faculty instance
+    faculty = Faculty.objects.get(id=faculty_id)
+
+    # Add subjects to the faculty for the specified semester and year
+    for subject_id in subjects:
+        subject = DepartmentSubject.objects.get(id=subject_id)
+        FacultySubject.objects.create(faculty=faculty, subject=subject, semester=semester, year=year)
+
+    return JsonResponse({'success': True})
+
+
+@csrf_exempt
 
 def save_faculty(request):
     if request.method == 'POST':
@@ -106,7 +231,7 @@ def save_faculty(request):
             last_name = request.POST.get('last_name')
             password = request.POST.get('password')
             status = request.POST.get('status')
-            selected_subject_ids = request.POST.getlist('selected_subjects')
+
             
             # Check if the request contains a file
             if 'selected_image' in request.FILES:
@@ -124,18 +249,7 @@ def save_faculty(request):
             if not status:
                 return JsonResponse({'error': 'Status cannot be empty'}, status=400)
 
-            # Validate subject IDs
-            invalid_subject_ids = []
-            for subject_id in selected_subject_ids:
-                try:
-                    # Check if the subject exists in the departments app
-                    DepartmentSubject.objects.get(id=subject_id)
-                except DepartmentSubject.DoesNotExist:
-                    invalid_subject_ids.append(subject_id)
-
-            if invalid_subject_ids:
-                return JsonResponse({'error': f'Invalid subject IDs: {invalid_subject_ids}'}, status=400)
-
+          
             # Create and save the faculty
             password_hash = make_password(password)
             faculty = Faculty.objects.create(
@@ -148,13 +262,6 @@ def save_faculty(request):
             )
 
             # Associate selected subjects with the faculty member
-            for subject_id in selected_subject_ids:
-                try:
-                    subject = DepartmentSubject.objects.get(id=subject_id)
-                    faculty.subjects.add(subject)
-                except DepartmentSubject.DoesNotExist:
-                    # Handle the case where the subject does not exist
-                    return JsonResponse({'error': f'Subject with ID {subject_id} does not exist'}, status=400)
 
             return JsonResponse({'message': 'Faculty data saved successfully'}, status=201)
 

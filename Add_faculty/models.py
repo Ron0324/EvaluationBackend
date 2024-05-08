@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 from Departments.models import Subject as DepartmentSubject
+from Departments.models import Semester
 
 class FacultyManager(BaseUserManager):
     def create_user(self, id_number, password=None, **extra_fields):
@@ -47,6 +48,20 @@ class Faculty(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+
+class FacultySubject(models.Model):
+    SEMESTER_CHOICES = (
+        ('1', 'First'),
+        ('2', 'Second'),
+    )
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    subject = models.ForeignKey(DepartmentSubject, on_delete=models.CASCADE)
+    semester = models.CharField(max_length=1, choices=SEMESTER_CHOICES)
+    year = models.IntegerField(null=True)
+
+    class Meta:
+        unique_together = ('faculty', 'subject', 'semester', 'year')
     
 
 
