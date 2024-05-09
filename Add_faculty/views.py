@@ -186,7 +186,7 @@ def fetch_subjects(request, faculty_id, year, semester):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     
-    
+@csrf_exempt
 def get_years(request, faculty_id):
     try:
         # Get the distinct year values associated with the selected faculty member
