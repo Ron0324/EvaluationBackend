@@ -439,8 +439,8 @@ def analyze_feedback(request, faculty_id):
 
         # Adjust polarity based on the presence of negative phrases
         if detected_negative_phrases:
-            polarity -= 0.5 
-            subjectivity += 0.5
+            polarity -= 0.03
+            subjectivity += 0.03
 
         # Accumulate sentiment scores
         total_polarity += polarity
@@ -453,10 +453,10 @@ def analyze_feedback(request, faculty_id):
         average_subjectivity = total_subjectivity / num_evaluations
 
         # Determine sentiment label based on average polarity score
-        if average_polarity > 0.1:
+        if average_polarity > 0.3:
             sentiment_label = 'Positive'
             conclusion = "The faculty member is doing an excellent job. Students appreciate their teaching style and find the lectures engaging."
-        elif average_polarity < -0.1:
+        elif average_polarity < -0.3:
             sentiment_label = 'Negative'
             conclusion = "The faculty member needs to improve their teaching approach. Students have expressed dissatisfaction with the course materials and delivery. The faculty member should prioritize improving their teaching approach to address student dissatisfaction with the course materials and delivery. This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience"
         else:
