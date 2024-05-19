@@ -29,7 +29,8 @@ def create_student(request):
             last_name=data['last_name'],
             suffix=data['suffix'],
             password=hashed_password,
-            course=data['course']
+            course=data['course'],
+            year_level = data['year_level']
         )
 
         return JsonResponse({'message': 'Student created successfully'})
@@ -53,7 +54,7 @@ def create_admin(request):
             
         )
 
-        return JsonResponse({'message': 'Student created successfully'})
+        return JsonResponse({'message': 'Admin created successfully'})
     else:
         return JsonResponse({'message': 'Invalid request method'}, status=400)
     
@@ -208,6 +209,8 @@ def admin_delete(request, admin_id):
         return JsonResponse({'error': 'Only DELETE requests are allowed'}, status=405)
    
 
+from urllib.parse import urlencode
+
 @csrf_exempt
 def student_login(request):
     if request.method == 'POST' or request.method == 'GET':
@@ -234,8 +237,24 @@ def student_login(request):
             # Log in the authenticated student
             login(request, student)
 
-    # Include the redirect URL in the response
-            redirect_url = "http://91.108.111.180:3000/homepage"
+            # Redirect URL with student information
+            redirect_url = "http://91.108.111.180:3000/homepage?"
+
+            # Include student information as query parameters
+            student_data = {
+                'id':student.id,
+                'username': student.username,
+                'id_number': student.id_number,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'suffix': student.suffix,
+                'course': student.course,
+                'year_level': student.year_level,
+                # Add other student information as needed
+            }
+
+            redirect_url += urlencode(student_data)
+
             print('Login successful. Redirecting to:', redirect_url)
 
             return JsonResponse({'message': 'Login successful', 'redirect_url': redirect_url})

@@ -30,6 +30,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import redirect
+from .models import Faculty, FacultySubject,  newEvaluation
+from Course_and_Students.models import Student
 
 
 
@@ -152,6 +154,9 @@ def faculty_subjects(request, faculty_id, year, semester):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Faculty, FacultySubject
 
 def fetch_subjects(request, faculty_id, year, semester):
     if request.method == 'GET':
@@ -174,7 +179,10 @@ def fetch_subjects(request, faculty_id, year, semester):
             )
 
             # Extract the subjects from the faculty_subjects queryset
-            subjects = [faculty_subject.subject.Subname for faculty_subject in faculty_subjects]
+            subjects = [
+                {'id': faculty_subject.subject.id, 'name': faculty_subject.subject.Subname}
+                for faculty_subject in faculty_subjects
+            ]
 
             # Return a JSON response with the list of subjects
             return JsonResponse({'subjects': subjects})
@@ -184,6 +192,34 @@ def fetch_subjects(request, faculty_id, year, semester):
             return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+
+def fetch_evaluations(request, faculty_id, subject_id, year, semester):
+    try:
+        # Query evaluations for the specified faculty, subject, year, and semester
+        evaluations = newEvaluation.objects.filter(
+            faculty_id=faculty_id,
+            subject_id=subject_id,
+            year=year,
+            semester=semester
+        ).values(
+            'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback'
+        )
+
+        # Calculate average total_rate
+        average_rating = newEvaluation.objects.filter(
+            faculty_id=faculty_id,
+            subject_id=subject_id,
+            year=year,
+            semester=semester
+        ).aggregate(avg_rating=Avg('total_rate'))['avg_rating']
+
+        # Convert QuerySet to list of dictionaries
+        evaluations_list = list(evaluations)
+
+        return JsonResponse({'evaluations': evaluations_list, 'average_rating': average_rating})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
     
     
 @csrf_exempt
@@ -326,7 +362,13 @@ def faculty_info(request, faculty_id):
 
     return JsonResponse(faculty_info)
 
+from decimal import Decimal
+import logging
 
+
+import logging
+
+logger = logging.getLogger(__name__)
 @csrf_exempt
 @require_POST
 def save_evaluation(request, faculty_id):
@@ -336,30 +378,86 @@ def save_evaluation(request, faculty_id):
             faculty = Faculty.objects.get(pk=faculty_id)
 
             for evaluation_data in evaluations_data:
-                evaluation = Evaluation.objects.create(
-                    criteria_A=evaluation_data['criteria_A'],
-                    criteria_B=evaluation_data['criteria_B'],
-                    criteria_C=evaluation_data['criteria_C'],
-                    criteria_D=evaluation_data['criteria_D'],
-                    total_rate=evaluation_data['total_rate'],
-                    feedback=evaluation_data['feedback'],
-                    faculty=faculty
+                student_id = evaluation_data['student_id']
+                semester_choice = evaluation_data['semester_choice']
+                year = evaluation_data['year']
+                subject_id = evaluation_data['subject_id']
+                year_level=  evaluation_data['year_level']
+                student_id_number = evaluation_data['student_id_number']
+                criteria_A = Decimal(evaluation_data['criteria_A'])
+                criteria_B = Decimal(evaluation_data['criteria_B'])
+                criteria_C = Decimal(evaluation_data['criteria_C'])
+                criteria_D = Decimal(evaluation_data['criteria_D'])
+                total_rate = evaluation_data['total_rate']
+                feedback = evaluation_data['feedback']
+                course = evaluation_data['course']
+
+                student = Student.objects.get(id=student_id)
+
+                # Check if the student has already evaluated this subject for the specified semester and year
+                if newEvaluation.objects.filter(
+                    student=student,
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year
+                ).exists():
+                    return JsonResponse({
+                        'error': f'Student {student_id_number} has already evaluated this subject for semester {semester_choice} and year {year}.'
+                    }, status=400)  # Send custom response for duplicate evaluation
+
+                # Check the number of existing evaluations for the subject, semester, and year
+                existing_evaluations_count = newEvaluation.objects.filter(
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year
+                ).count()
+
+                if existing_evaluations_count >= 30:
+                    return JsonResponse({
+                        'error': f'The maximum limit of 30 evaluators has been reached for this subject, semester, and year.'
+                    }, status=400)
+
+                evaluation = newEvaluation.objects.create(
+                    faculty=faculty,
+                    student=student,
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year,
+                    year_level=year_level,
+                    student_id_number=student_id_number,
+                    criteria_A=criteria_A,
+                    criteria_B=criteria_B,
+                    criteria_C=criteria_C,
+                    criteria_D=criteria_D,
+                    total_rate=total_rate,
+                    course=course,
+                    feedback=feedback
                 )
 
-            return JsonResponse({'message': 'Evaluation successful.'})
+            return JsonResponse({'message': 'Evaluations saved successfully.'})
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            return JsonResponse({'error': str(e)}, status=400)  # Default error response
     else:
-        return JsonResponse({'error': 'Invalid request method.'}, status=400)   
+        return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 
+from django.db.models import Avg
 def evaluation_score_per_faculty(request, faculty_id):
     faculty = get_object_or_404(Faculty, id=faculty_id)
 
     # Fetching specific fields from Evaluation objects
-    scores = Evaluation.objects.filter(faculty=faculty).values('criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback')
+    scores = Evaluation.objects.filter(faculty=faculty).values(
+        'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback'
+    )
 
-    return JsonResponse(list(scores), safe=False)
+    # Calculating average total_rate
+    average_rating = Evaluation.objects.filter(faculty=faculty).aggregate(avg_rating=Avg('total_rate'))['avg_rating']
+
+    # Convert QuerySet to list of dictionaries
+    scores_list = list(scores)
+
+    return JsonResponse({'scores': scores_list, 'average_rating': average_rating}, safe=False)
+
 
 
 
@@ -370,19 +468,17 @@ from textblob import TextBlob
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from .models import Evaluation, Faculty
-
-def analyze_feedback(request, faculty_id):
+def analyze_feedback(request, faculty_id, subject_id, year, semester):
     # Define the set of offensive words and phrases
-    offensive_phrases = {"putang ina", "putangina", "putang ina"}  
+    offensive_phrases = {"putang ina", "putangina", "putang ina"}
     offensive_words = {"crap", "idiot", "stupid", "fool", "fuck", "fuck you", "go to hell", "goes to hell",
                        "fuck her", "fuck him", "shit", "bitch", "cunt",
                        "son of a bitch", "dickhead", "tanga", "mulala",
                        "gago", "inutil", "mang mang", "mangmang", "inotil",
-                       "bobo"} 
+                       "bobo"}
 
-    
     negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late", "always late", 'not teaching',
-                        'dosent teach anything', 'dose not teach'} 
+                        'dosent teach anything', 'dose not teach'}
 
     faculty = get_object_or_404(Faculty, id=faculty_id)
 
@@ -392,13 +488,18 @@ def analyze_feedback(request, faculty_id):
         'sentiment': '',
         'average_polarity': 0,
         'average_subjectivity': '',
-        'conclusion': '',  
+        'conclusion': '',
         'all_offensive_words': [],  # Changed to list
         'all_negative_phrases': set()  # Changed to set
     }
 
-    # Retrieve evaluations associated with the faculty
-    evaluations = Evaluation.objects.filter(faculty=faculty)
+    # Retrieve evaluations associated with the faculty, subject, year, and semester
+    evaluations = newEvaluation.objects.filter(
+        faculty=faculty,
+        subject_id=subject_id,
+        year=year,
+        semester=semester
+    )
 
     # Initialize variables to store overall sentiment scores
     total_polarity = 0
@@ -458,10 +559,10 @@ def analyze_feedback(request, faculty_id):
             conclusion = "The faculty member is doing an excellent job. Students appreciate their teaching style and find the lectures engaging."
         elif average_polarity < -0.3:
             sentiment_label = 'Negative'
-            conclusion = "The faculty member needs to improve their teaching approach. Students have expressed dissatisfaction with the course materials and delivery. The faculty member should prioritize improving their teaching approach to address student dissatisfaction with the course materials and delivery. This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience"
+            conclusion = "The faculty member needs to improve their teaching approach.The faculty member should prioritize improving his/her teaching approach to address student dissatisfaction with the course materials and delivery. This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience"
         else:
             sentiment_label = 'Neutral'
-            conclusion = "The feedback for this faculty member is mixed. Some students have positive comments, while others have suggestions for improvement."
+            conclusion = "The result of the sentiment analysis for the faculty evaluation feedback is Neutral, meaning the polarity score might range from -0.3 to +0.3. This indicates that the faculty member is not performing poorly in his/her teaching approach. However, it is still recommended to improve teaching techniques and methods for better student-teacher relationships."
 
         # Map the average subjectivity score to subjective or objective
         if average_subjectivity > 0.5:
