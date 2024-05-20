@@ -477,8 +477,12 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
                        "gago", "inutil", "mang mang", "mangmang", "inotil",
                        "bobo"}
 
-    negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late", "always late", 'not teaching',
-                        'dosent teach anything', 'dose not teach'}
+    negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late",
+                         'mababa mag bigay ','laging galit','pangit','hindi marunong mag turo','masungit','madaling pakisamahan'}
+
+    positive_phrases = {"magaling magturo", "mataas mag bigay", "pogi", "maganda",
+                        "mabait", "masipag", "knowledgeable", "cares about students", 
+                        "effective teaching", "engaging lectures", "inspiring", 'mahirap pakisamahan'}
 
     faculty = get_object_or_404(Faculty, id=faculty_id)
 
@@ -490,7 +494,8 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
         'average_subjectivity': '',
         'conclusion': '',
         'all_offensive_words': [],  # Changed to list
-        'all_negative_phrases': set()  # Changed to set
+        'all_negative_phrases': set(),  # Changed to set
+        'all_positive_phrases': set()  # Added to store positive phrases
     }
 
     # Retrieve evaluations associated with the faculty, subject, year, and semester
@@ -538,10 +543,23 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
         # Extend the set of all detected negative phrases in this feedback
         feedback_data['all_negative_phrases'].update(detected_negative_phrases)  # Use update instead of extend
 
-        # Adjust polarity based on the presence of negative phrases
+        # Check for positive phrases
+        detected_positive_phrases = set()  # Use a set to store positive phrases
+        for phrase in positive_phrases:
+            if phrase in cleaned_feedback:
+                detected_positive_phrases.add(phrase)
+
+        # Extend the set of all detected positive phrases in this feedback
+        feedback_data['all_positive_phrases'].update(detected_positive_phrases)  # Use update instead of extend
+
+        # Adjust polarity based on the presence of negative or positive phrases
         if detected_negative_phrases:
-            polarity -= 0.03
-            subjectivity += 0.03
+            polarity -= 0.08
+            
+
+        if detected_positive_phrases:
+            polarity += 0.08
+            
 
         # Accumulate sentiment scores
         total_polarity += polarity
@@ -559,10 +577,13 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
             conclusion = "The faculty member is doing an excellent job. Students appreciate their teaching style and find the lectures engaging."
         elif average_polarity < -0.3:
             sentiment_label = 'Negative'
-            conclusion = "The faculty member needs to improve their teaching approach.The faculty member should prioritize improving his/her teaching approach to address student dissatisfaction with the course materials and delivery. This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience"
+            conclusion = ("The faculty member needs to improve their teaching approach. The faculty member should prioritize improving their teaching approach to address student dissatisfaction with the course materials and delivery. "
+                          "This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. "
+                          "Additionally, the faculty member should explore varied delivery methods, such as incorporating multimedia resources, interactive activities, and real-world examples to cater to diverse learning styles and enhance student engagement. "
+                          "Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience.")
         else:
             sentiment_label = 'Neutral'
-            conclusion = "The result of the sentiment analysis for the faculty evaluation feedback is Neutral, meaning the polarity score might range from -0.3 to +0.3. This indicates that the faculty member is not performing poorly in his/her teaching approach. However, it is still recommended to improve teaching techniques and methods for better student-teacher relationships."
+            conclusion = "The result of the sentiment analysis for the faculty evaluation feedback is Neutral, meaning the polarity score might range from -0.3 to +0.3. This indicates that the faculty member is not performing poorly in their teaching approach. However, it is still recommended to improve teaching techniques and methods for better student-teacher relationships."
 
         # Map the average subjectivity score to subjective or objective
         if average_subjectivity > 0.5:
@@ -573,7 +594,7 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
         feedback_data['sentiment'] = sentiment_label
         feedback_data['average_polarity'] = average_polarity
         feedback_data['average_subjectivity'] = subjectivity_label
-        feedback_data['conclusion'] = conclusion  # Changed variable name to 'conclusion'
+        feedback_data['conclusion'] = conclusion
 
     else:
         feedback_data['sentiment'] = 'No evaluations found'
@@ -581,7 +602,9 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
     # If sentiment is negative, include only negative phrases
     if feedback_data['sentiment'] == 'Negative':
         feedback_data['all_negative_phrases'] = list(feedback_data['all_negative_phrases'])
+        feedback_data.pop('all_positive_phrases')  # Remove 'all_positive_phrases' if sentiment is negative
     else:
         feedback_data.pop('all_negative_phrases')  # Remove 'all_negative_phrases' from feedback_data if sentiment is not negative
+        feedback_data['all_positive_phrases'] = list(feedback_data['all_positive_phrases'])  # Convert positive phrases to list
 
     return JsonResponse({'faculty_feedback': feedback_data})
