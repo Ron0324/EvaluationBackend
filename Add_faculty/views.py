@@ -477,12 +477,12 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
                        "gago", "inutil", "mang mang", "mangmang", "inotil",
                        "bobo"}
 
-    negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late",
-                         'mababa mag bigay ','laging galit','pangit','hindi marunong mag turo','masungit','madaling pakisamahan'}
+    negative_phrases = {"hindi nag tuturo", "hindi pumapasok", "laging late", "always late", 'not teaching',
+                        'dosent teach anything', 'dose not teach','mababa mag bigay ng grades','laging galit','pangit','hindi marunong mag turo'}
 
-    positive_phrases = {"magaling magturo", "mataas mag bigay", "pogi", "maganda",
-                        "mabait", "masipag", "knowledgeable", "cares about students", 
-                        "effective teaching", "engaging lectures", "inspiring", 'mahirap pakisamahan'}
+    positive_phrases = {"magaling magturo", "very good teacher", "excellent teacher", "always on time",
+                        "very helpful", "approachable", "knowledgeable", "cares about students", 
+                        "effective teaching", "engaging lectures", "inspiring", "motivating"}
 
     faculty = get_object_or_404(Faculty, id=faculty_id)
 
@@ -552,14 +552,17 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
         # Extend the set of all detected positive phrases in this feedback
         feedback_data['all_positive_phrases'].update(detected_positive_phrases)  # Use update instead of extend
 
-        # Adjust polarity based on the presence of negative or positive phrases
+        # Adjust polarity based on the presence of offensive, negative, or positive phrases
+        if detected_offensive_words:
+            polarity -= 0.2
+
         if detected_negative_phrases:
-            polarity -= 0.5
-            
+            polarity -= 0.1
+           
 
         if detected_positive_phrases:
-            polarity += 0.08
-            
+            polarity += 0.1
+          
 
         # Accumulate sentiment scores
         total_polarity += polarity
@@ -572,10 +575,10 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
         average_subjectivity = total_subjectivity / num_evaluations
 
         # Determine sentiment label based on average polarity score
-        if average_polarity > 0.3:
+        if average_polarity > 0.15:
             sentiment_label = 'Positive'
             conclusion = "The faculty member is doing an excellent job. Students appreciate their teaching style and find the lectures engaging."
-        elif average_polarity < -0.3:
+        elif average_polarity < -0.15:
             sentiment_label = 'Negative'
             conclusion = ("The faculty member needs to improve their teaching approach. The faculty member should prioritize improving their teaching approach to address student dissatisfaction with the course materials and delivery. "
                           "This entails revisiting and potentially updating the course materials to ensure they are comprehensive, engaging, and aligned with the learning objectives. "
