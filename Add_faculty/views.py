@@ -554,7 +554,7 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
 
         # Adjust polarity based on the presence of negative or positive phrases
         if detected_negative_phrases:
-            polarity -= 0.08
+            polarity -= 0.5
             
 
         if detected_positive_phrases:
