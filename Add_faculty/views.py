@@ -586,7 +586,7 @@ def analyze_feedback(request, faculty_id, subject_id, year, semester):
                           "Regular solicitation of feedback from students and willingness to adapt teaching strategies based on their input can also significantly contribute to improving the overall learning experience.")
         else:
             sentiment_label = 'Neutral'
-            conclusion = "The result of the sentiment analysis for the faculty evaluation feedback is Neutral, meaning the polarity score might range from -0.3 to +0.3. This indicates that the faculty member is not performing poorly in their teaching approach. However, it is still recommended to improve teaching techniques and methods for better student-teacher relationships."
+            conclusion = "The result of the sentiment analysis for the faculty evaluation feedback is Neutral, meaning the polarity score might range from -0.15 to +0.15. This indicates that the faculty member is not performing poorly in their teaching approach. However, it is still recommended to improve teaching techniques and methods for better student-teacher relationships."
 
         # Map the average subjectivity score to subjective or objective
         if average_subjectivity > 0.5:
