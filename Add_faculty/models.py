@@ -103,7 +103,7 @@ class newEvaluation(models.Model):
 
     class Meta:
         db_table = 'Subjects_Evaluation'
-        unique_together = ('student', 'subject', 'semester', 'year')
+        unique_together = ('student','admin', 'subject', 'semester', 'year')
 
 
     def __str__(self):

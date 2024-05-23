@@ -6,6 +6,7 @@ from .models import Faculty, Evaluation, FacultySubject
 from Departments.models import Subject as DepartmentSubject
 from Departments.models import Subject
 from Departments.models import Semester
+
 import json
 from django.contrib.auth.hashers import make_password
 from django.db import IntegrityError
@@ -31,7 +32,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import redirect
 from .models import Faculty, FacultySubject,  newEvaluation
-from Course_and_Students.models import Student
+from Course_and_Students.models import Student,Admin
 
 
 
@@ -203,7 +204,7 @@ def fetch_evaluations(request, faculty_id, subject_id, year, semester):
             year=year,
             semester=semester
         ).values(
-            'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback'
+            'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback','student_id_number','course','admin_id_number'
         )
 
         # Calculate average total_rate
@@ -439,7 +440,81 @@ def save_evaluation(request, faculty_id):
             return JsonResponse({'error': str(e)}, status=400)  # Default error response
     else:
         return JsonResponse({'error': 'Invalid request method.'}, status=400)
+    
 
+
+
+
+
+@csrf_exempt
+@require_POST
+def admin_save_evaluation(request, faculty_id):
+    if request.method == 'POST':
+        try:
+            evaluations_data = json.loads(request.body.decode('utf-8'))['evaluations_data']
+            faculty = Faculty.objects.get(pk=faculty_id)
+
+            for evaluation_data in evaluations_data:
+                admin_id = evaluation_data['admin_id']
+                semester_choice = evaluation_data['semester_choice']
+                year = evaluation_data['year']
+                subject_id = evaluation_data['subject_id']
+                admin_id_number = evaluation_data['admin_id_number']
+                
+                criteria_A = Decimal(evaluation_data['criteria_A'])
+                criteria_B = Decimal(evaluation_data['criteria_B'])
+                criteria_C = Decimal(evaluation_data['criteria_C'])
+                criteria_D = Decimal(evaluation_data['criteria_D'])
+                total_rate = evaluation_data['total_rate']
+                feedback = evaluation_data['feedback']
+
+                admin = Admin.objects.get(id=admin_id)
+
+                # Check if the admin has already evaluated this subject for the specified semester and year
+                if newEvaluation.objects.filter(
+                    admin=admin,
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year
+                ).exists():
+                    return JsonResponse({
+                        'error': f'Admin {admin_id_number} has already evaluated this subject for semester {semester_choice} and year {year}.'
+                    }, status=400)  # Send custom response for duplicate evaluation
+
+                # Check the number of existing evaluations for the subject, semester, and year
+                existing_evaluations_count = newEvaluation.objects.filter(
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year
+                ).count()
+
+                if existing_evaluations_count >= 30:
+                    return JsonResponse({
+                        'error': f'The maximum limit of 30 evaluators has been reached for this subject, semester, and year.'
+                    }, status=400)
+
+                evaluation = newEvaluation.objects.create(
+                    faculty=faculty,
+                    admin=admin,
+                    subject_id=subject_id,
+                    semester=semester_choice,
+                    year=year,
+                    admin_id_number=admin_id_number,
+                    criteria_A=criteria_A,
+                    criteria_B=criteria_B,
+                    criteria_C=criteria_C,
+                    criteria_D=criteria_D,
+                    total_rate=total_rate,
+                    feedback=feedback
+                )
+
+            return JsonResponse({'message': 'Evaluations saved successfully.'})
+        except Exception as e:
+            # Log the error message for debugging
+            print(f"Error: {str(e)}")
+            return JsonResponse({'error': str(e)}, status=400)  # Default error response
+    else:
+        return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 from django.db.models import Avg
 def evaluation_score_per_faculty(request, faculty_id):
@@ -447,7 +522,7 @@ def evaluation_score_per_faculty(request, faculty_id):
 
     # Fetching specific fields from Evaluation objects
     scores = Evaluation.objects.filter(faculty=faculty).values(
-        'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback'
+        'criteria_A', 'criteria_B', 'criteria_C', 'criteria_D', 'total_rate', 'feedback',
     )
 
     # Calculating average total_rate

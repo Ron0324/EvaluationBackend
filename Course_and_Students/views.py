@@ -89,21 +89,20 @@ def admin_login(request):
 
             # Serialize admin information
             admin_data = {
+                'id':admin.id,
                 'id_number': admin.id_number,
-                'first_name': admin.first_name,
+                'full_name': admin.full_name,
                 # Add more fields as needed
             }
 
             # Redirect URL after successful login
-            redirect_url = "http://91.108.111.180:3000/Admin-Dashboard"
+            redirect_url = "http://91.108.111.180:3000/Admin-Dashboard?"
 
-            response_data = {
-                'message': 'Login successful',
-                'admin': admin_data,
-                'redirect_url': redirect_url,
-            }
+            
+                
+            redirect_url += urlencode(admin_data)
 
-            return JsonResponse(response_data)
+            return JsonResponse({'message': 'Login successful', 'redirect_url': redirect_url})
 
         except IntegrityError as e:
             print(f"Error during login: {e}")
