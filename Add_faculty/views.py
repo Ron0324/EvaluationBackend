@@ -222,6 +222,60 @@ def fetch_evaluations(request, faculty_id, subject_id, year, semester):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
     
+def calculate_averages(request, faculty_id):
+    try:
+        # Filter evaluations by faculty
+        evaluations = newEvaluation.objects.filter(faculty_id=faculty_id)
+        
+        if not evaluations.exists():
+            return JsonResponse({'error': 'No evaluations found for the specified faculty'}, status=404)
+
+        # Calculate averages for each year
+        year_averages = {}
+        distinct_years = evaluations.values_list('year', flat=True).distinct()
+        
+        for year in distinct_years:
+            year_data = {'student': {}, 'admin': {}}
+
+            # Calculate averages for first semester
+            first_sem_student_avg = evaluations.filter(year=year, semester='1', admin__isnull=True).aggregate(
+                avg_A=Avg('criteria_A'), avg_B=Avg('criteria_B'), avg_C=Avg('criteria_C'), avg_D=Avg('criteria_D')
+            )
+            first_sem_admin_avg = evaluations.filter(year=year, semester='1', admin__isnull=False).aggregate(
+                avg_A=Avg('criteria_A'), avg_B=Avg('criteria_B'), avg_C=Avg('criteria_C'), avg_D=Avg('criteria_D')
+            )
+            first_sem_avg_all = sum(filter(None, [first_sem_student_avg['avg_A'], first_sem_student_avg['avg_B'], first_sem_student_avg['avg_C'], first_sem_student_avg['avg_D']])) / 4 if all(first_sem_student_avg.values()) else None
+            year_data['student']['1st_sem'] = {'avg_all': Decimal(0) if first_sem_avg_all is None else first_sem_avg_all}
+            year_data['admin']['1st_sem'] = {'avg_all': Decimal(0) if first_sem_admin_avg['avg_A'] is None else first_sem_admin_avg['avg_A']}
+
+            # Calculate averages for second semester
+            second_sem_student_avg = evaluations.filter(year=year, semester='2', admin__isnull=True).aggregate(
+                avg_A=Avg('criteria_A'), avg_B=Avg('criteria_B'), avg_C=Avg('criteria_C'), avg_D=Avg('criteria_D')
+            )
+            second_sem_admin_avg = evaluations.filter(year=year, semester='2', admin__isnull=False).aggregate(
+                avg_A=Avg('criteria_A'), avg_B=Avg('criteria_B'), avg_C=Avg('criteria_C'), avg_D=Avg('criteria_D')
+            )
+            second_sem_avg_all = sum(filter(None, [second_sem_student_avg['avg_A'], second_sem_student_avg['avg_B'], second_sem_student_avg['avg_C'], second_sem_student_avg['avg_D']])) / 4 if all(second_sem_student_avg.values()) else None
+            year_data['student']['2nd_sem'] = {'avg_all': Decimal(0) if second_sem_avg_all is None else second_sem_avg_all}
+            year_data['admin']['2nd_sem'] = {'avg_all': Decimal(0) if second_sem_admin_avg['avg_A'] is None else second_sem_admin_avg['avg_A']}
+
+            # Calculate year averages
+            year_avg_student = {
+                'avg_all': (year_data['student']['1st_sem']['avg_all'] + year_data['student']['2nd_sem']['avg_all']) / 2 if year_data['student']['1st_sem']['avg_all'] is not None and year_data['student']['2nd_sem']['avg_all'] is not None else None,
+            }
+            year_avg_admin = {
+                'avg_all': (year_data['admin']['1st_sem']['avg_all'] + year_data['admin']['2nd_sem']['avg_all']) / 2 if year_data['admin']['1st_sem']['avg_all'] is not None and year_data['admin']['2nd_sem']['avg_all'] is not None else None,
+            }
+            year_data['student']['year_avg'] = year_avg_student
+            year_data['admin']['year_avg'] = year_avg_admin
+
+            year_averages[year] = year_data
+
+        return JsonResponse({'year_averages': year_averages})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    
     
 @csrf_exempt
 def get_years(request, faculty_id):

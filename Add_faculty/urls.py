@@ -1,5 +1,5 @@
 from django.urls import path,include
-from .views import admin_save_evaluation, save_faculty, get_years,fetch_subjects,fetch_evaluations, faculty_subjects,save_faculty_subjects,add_subjects_to_faculty  ,show_all_faculty, delete_all_faculty_records, faculty_login,faculty_info,save_evaluation,evaluation_score_per_faculty,analyze_feedback
+from .views import admin_save_evaluation,calculate_averages, save_faculty, get_years,fetch_subjects,fetch_evaluations, faculty_subjects,save_faculty_subjects,add_subjects_to_faculty  ,show_all_faculty, delete_all_faculty_records, faculty_login,faculty_info,save_evaluation,evaluation_score_per_faculty,analyze_feedback
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -17,6 +17,7 @@ urlpatterns = [
        path('fetch_subjects/<int:faculty_id>/<str:year>/<int:semester>/', fetch_subjects, name='fetch_subjects'),
        path('fetch-evaluations/<int:faculty_id>/<int:subject_id>/<str:year>/<int:semester>/', fetch_evaluations, name='fetch_evaluations'),
        path('save_evaluation/<int:faculty_id>/',admin_save_evaluation, name='admin_save_evaluation'),
+       path('calculate_averages/<int:faculty_id>/', calculate_averages, name = 'calculate_averages'),
 
 
 
